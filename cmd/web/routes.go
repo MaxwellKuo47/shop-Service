@@ -10,7 +10,7 @@ func (app *AppConfig) routes() *httprouter.Router {
 	httpRouter := httprouter.New()
 	// httpRouter.Handler(http.MethodGet, "/page",http.StripPrefix("/page/",http.FileServer(http.Dir("./build"))))
 	httpRouter.HandlerFunc(http.MethodGet, "/api/ping", app.requestLogger(app.ping))
-	httpRouter.HandlerFunc(http.MethodPost, "/api/product/add", app.requestLogger(app.productAdd))
+	httpRouter.HandlerFunc(http.MethodPost, "/api/product", app.requestLogger(app.productAdd))
 
 	return httpRouter
 }
