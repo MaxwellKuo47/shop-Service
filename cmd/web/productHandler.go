@@ -1,71 +1,78 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"net/http"
 	"strconv"
-	"sync"
+	"strings"
+	"time"
 )
 
 const MAX_FORM_ACCEPT = 10 << 20 //10MB
-const PRODUCT_IMAGE_FOLDER  = "/home/workspace/code/ReactPractice/Image/"
+const PRODUCT_IMAGE_FOLDER = "/home/workspace/code/ReactPractice/Image/"
 
-var wg sync.WaitGroup
+//productAdd handle products adding proocess
+func (app *AppConfig) productAdd(w http.ResponseWriter, r *http.Request) {
+	type ColorSizeElement struct {
+		Color        string `json:"color"`
+		AmountSizeOS int    `json:"OS"`
+		AmountSizeS  int    `json:"S"`
+		AmountSizeM  int    `json:"M"`
+		AmountSizeL  int    `json:"L"`
+		AmountSizeXL int    `json:"XL"`
+	}
+	type RequstJsonInfo struct {
+		ProdName     string             `json:"productName"`
+		ProdDes      string             `json:"productDes"`
+		ProdMktPrice int                `json:"productMktPrice"`
+		ProdSalPrice int                `json:"productSalPrice"`
+		ProdAmount   []ColorSizeElement `json:"productAmount"`
+		ProdTags     []string           `json:"productTags"`
+	}
 
-func (app *AppConfig) productAdd (w http.ResponseWriter, r *http.Request) {
+	//This needs to be set in the middleware for front-end CORS
 	w.Header().Set("Access-Control-Allow-Origin", "http://localhost:3000")
-	err := r.ParseMultipartForm(MAX_FORM_ACCEPT) 
+
+	err := r.ParseMultipartForm(MAX_FORM_ACCEPT)
 	if err != nil {
 		app.clientError(w, r, http.StatusBadRequest, err.Error())
 		return
 	}
 
-	fmt.Println(r.PostForm.Get("info"))
-	wg.Add(2)
-	go func (size string) {
-		for i := 0; i < 5; i++ {
-			num := strconv.Itoa(i)
-			file, _, err := r.FormFile("file"+ size +num)
-			fmt.Println("file"+num)
-			if err != nil {
-				app.clientError(w, r, http.StatusBadRequest, err.Error())
-				return
-			}
-			body, err := ioutil.ReadAll(file)
-			if err != nil {
-				app.clientError(w, r, http.StatusBadRequest, err.Error())
-				return
-			}
-			err = ioutil.WriteFile("./file"+ size +num+".jpeg", body, 0644)
-			if err != nil {
-				app.clientError(w, r, http.StatusBadRequest, err.Error())
-				return
-			}
-		}
-		wg.Done()
-	}("Lg")
-	go func (size string) {
-		for i := 0; i < 5; i++ {
-			num := strconv.Itoa(i)
-			file, _, err := r.FormFile("file"+ size +num)
-			fmt.Println("file"+num)
-			if err != nil {
-				app.clientError(w, r, http.StatusBadRequest, err.Error())
-				return
-			}
-			body, err := ioutil.ReadAll(file)
-			if err != nil {
-				app.clientError(w, r, http.StatusBadRequest, err.Error())
-				return
-			}
-			err = ioutil.WriteFile("./file"+ size +num+".jpeg", body, 0644)
-			if err != nil {
-				app.clientError(w, r, http.StatusBadRequest, err.Error())
-				return
-			}
-		}
-		wg.Done()
-	}("Sm")
-	wg.Wait()
-} 
+	var reqJSON RequstJsonInfo
+	err = json.Unmarshal([]byte(r.PostForm.Get("info")), &reqJSON)
+	if err != nil {
+		app.serverError(w, r, err)
+		return
+	}
+	fmt.Println(reqJSON)
+
+	//info should contian files name (Request side should change)
+	//Here using the front-end side uuid(fileIDs) as the file name for temp unique file name solution
+	fileIDs := strings.Split(r.PostForm.Get("fileIDs"), ",")
+	var lgFiles, smFiles []string //files identifier for formValue
+	for i := 0; i < len(fileIDs); i++ {
+		numStr := strconv.Itoa(i)
+		lgFiles = append(lgFiles, "fileLg"+numStr) //fileLg1, fileLg2...(Which is form key of files set at front-end)
+		smFiles = append(smFiles, "fileSm"+numStr) //fileSm1, fileSm2...
+	}
+
+	//Time is used to add to the name.
+	//storeNames contain the name we want to store in the DB
+	curTime := time.Now()
+	var storeNames []string
+	storeNames, err = handleUploadImage(fileIDs, lgFiles, curTime, "imageLg/", r)
+	if err != nil {
+		app.serverError(w, r, err)
+		return
+	}
+	//Both Large or Small images name are same
+	_, err = handleUploadImage(fileIDs, smFiles, curTime, "imageSm/", r)
+	if err != nil {
+		app.serverError(w, r, err)
+		return
+	}
+	fmt.Println(storeNames)
+
+}
