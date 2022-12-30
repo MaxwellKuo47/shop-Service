@@ -31,9 +31,6 @@ func (app *AppConfig) productAdd(w http.ResponseWriter, r *http.Request) {
 		ProdTags     []string           `json:"productTags"`
 	}
 
-	//This needs to be set in the middleware for front-end CORS
-	w.Header().Set("Access-Control-Allow-Origin", "http://localhost:3000")
-
 	err := r.ParseMultipartForm(MAX_FORM_ACCEPT)
 	if err != nil {
 		app.clientError(w, r, http.StatusBadRequest, err.Error())

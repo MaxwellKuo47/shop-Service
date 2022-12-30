@@ -26,5 +26,6 @@ func main() {
 		ErrorLog: app.serverErrLogger,
 	}
 
+	app.infoLogger.Println("Server on port :8081")
 	log.Fatal(svr.ListenAndServe())
 }
