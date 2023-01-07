@@ -44,7 +44,19 @@ func (app *AppConfig) productAdd(w http.ResponseWriter, r *http.Request) {
 		app.serverError(w, r, err)
 		return
 	}
-	fmt.Println(reqJSON)
+
+	// if !(validator.CheckMaxChars(reqJSON.ProdName, 20) &&
+	// 	validator.CheckMinChars(reqJSON.ProdName, 4) &&
+	// 	validator.CheckMaxChars(reqJSON.ProdDes, 3000) &&
+	// 	validator.CheckMaxInt(reqJSON.ProdMktPrice, 9999) &&
+	// 	validator.CheckMinInt(reqJSON.ProdMktPrice, 200) &&
+	// 	validator.CheckMaxInt(reqJSON.ProdMktPrice, 9999) &&
+	// 	validator.CheckMinInt(reqJSON.ProdMktPrice, 200) &&
+	// 	validator.CheckMinInt(len(reqJSON.ProdAmount), 1)) {
+	// 		app.clientError(w, r, http.StatusBadRequest, "bad request")
+	// } else {
+
+	// }
 
 	//info should contian files name (Request side should change)
 	//Here using the front-end side uuid(fileIDs) as the file name for temp unique file name solution
